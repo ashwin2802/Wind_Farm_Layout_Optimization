@@ -117,7 +117,7 @@ def loadPowerCurve(power_curve_file_name):
     powerCurve = pd.read_csv(power_curve_file_name, sep=',', dtype = np.float32)
     powerCurve = powerCurve.to_numpy(dtype = np.float32)
     return(powerCurve)
-    
+
 
 def binWindResourceData(wind_data_file_name):
     r"""
@@ -185,7 +185,7 @@ def binWindResourceData(wind_data_file_name):
     wind_inst_freq   = wind_inst_freq.ravel()
     
     return(wind_inst_freq)
-
+    
 
 def searchSorted(lookup, sample_array):
     """
@@ -443,16 +443,19 @@ def checkConstraints(turb_coords, turb_diam):
     
     # print messages
     if  peri_constr_viol  == True  and prox_constr_viol == True:
-          print('Somewhere both perimeter constraint and proximity constraint are violated\n')
+          # print('Somewhere both perimeter constraint and proximity constraint are violated\n')
+          return False
     elif peri_constr_viol == True  and prox_constr_viol == False:
-          print('Somewhere perimeter constraint is violated\n')
+          # print('Somewhere perimeter constraint is violated\n')
+          return False
     elif peri_constr_viol == False and prox_constr_viol == True:
-          print('Somewhere proximity constraint is violated\n')
-    else: print('Both perimeter and proximity constraints are satisfied !!\n')
+          # print('Somewhere proximity constraint is violated\n')
+          return False
+    # else: print('Both perimeter and proximity constraints are satisfied !!\n')
         
-    return()
+    return True
 
-if __name__ == "__main__":
+def modAEP(turb_coords, power_curve, wind_inst_freq):
 
     # Turbine Specifications.
     # -**-SHOULD NOT BE MODIFIED-**-
@@ -472,14 +475,14 @@ if __name__ == "__main__":
     turb_rad       =  turb_diam/2 
     
     # Turbine x,y coordinates
-    turb_coords   =  getTurbLoc(r'../Shell_Hackathon Dataset/turbine_loc_test.csv')
+    # turb_coords   =  getTurbLoc(r'./test.csv')
     
     # Load the power curve
-    power_curve   =  loadPowerCurve('../Shell_Hackathon Dataset/power_curve.csv')
+    # power_curve   =  loadPowerCurve('../Dataset/Shell_Hackathon Dataset/power_curve.csv')
     
     # Pass wind data csv file location to function binWindResourceData.
     # Retrieve probabilities of wind instance occurence.
-    wind_inst_freq =  binWindResourceData(r'../Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')   
+    # wind_inst_freq =  binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')   
     
     # Doing preprocessing to avoid the same repeating calculations. Record 
     # the required data for calculations. Do that once. Data are set up (shaped)
@@ -490,9 +493,11 @@ if __name__ == "__main__":
     # out the function call to checkConstraints below if you desire. Note that 
     # this is just a check and the function does not quantifies the amount by 
     # which the constraints are violated if any. 
-    checkConstraints(turb_coords, turb_diam)
+    if not checkConstraints(turb_coords, turb_diam):
+        return 0
     
-    print('Calculating AEP......')
+    # print('Calculating AEP......')
     AEP = getAEP(turb_rad, turb_coords, power_curve, wind_inst_freq, 
                   n_wind_instances, cos_dir, sin_dir, wind_sped_stacked, C_t) 
-    print('Total power produced by the wind farm is: ', "%.12f"%(AEP), 'GWh')
+    # print('Total power produced by the wind farm is: ', "%.12f"%(AEP), 'GWh')
+    return AEP
