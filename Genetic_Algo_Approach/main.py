@@ -8,10 +8,10 @@ if __name__ == "__main__":
 	wind_inst_freq =  binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')   
 	
 	max_fitness, max_DNA = 0, None
-	max_iterations = 2 # for debugging
+	max_iterations = 200 # for debugging
 	
-	pop_size = 1024
-	# pop_size = 64  # for debugging
+	pop_size = 2048
+	# pop_size =  32 # for debugging
 
 	# Will be used for Selection and Crossover
 	DNA_arr, fitness_arr = [], []
