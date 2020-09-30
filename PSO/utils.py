@@ -16,9 +16,9 @@ class Plotter:
             list_data = list(reader)
         list_data = list_data[1:]
         list_data = [[float(x),float(y)] for x,y in list_data]
-        self.plot(list_data)
+        self.plot(list_data, file=True)
     
-    def plot(self, list_data):
+    def plot(self, list_data, file=False):
         plt.figure(self.index)
         plt.clf()
 
@@ -47,9 +47,13 @@ class Plotter:
                     start, end = [x_1, x_2], [y_1, y_2]
                     plt.plot(start, end)
 
+        if (file):
+            plt.ioff()
+            plt.show()
+
         plt.pause(self.delay)
 
 if __name__ == "__main__":
-    aep = input()
+    aep = input("Enter csv filename to plot from results folder: ")
     plotter = Plotter()
-    plotter.plot_from_file('results/result_'+ aep + '.csv')
+    plotter.plot_from_file('results/'+ aep + '.csv')

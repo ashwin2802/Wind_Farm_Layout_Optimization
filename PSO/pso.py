@@ -1,24 +1,25 @@
 import numpy as np
 from eval import getAEP, loadPowerCurve, binWindResourceData, preProcessing, checkConstraints
 from utils import Plotter
+import csv
 
 class Particle:
     def __init__(self, num_turbines: int = 50):
         self.min_sep = 400
         self.length = 4000
         self.fence = 50
-        
-        self.pos = np.ones([num_turbines, 2]) * self.fence + np.random.uniform(size=[num_turbines, 2]) * (self.length - 2 * self.fence)
-        self.pos_history = []
-        
-        self.best_pos = None
+
+        self.shape= [num_turbines, 2]
+        self.best_pos = np.zeros(self.shape)
         self.best_aep = 0
         
         self.fitness = 0
-        self.shape= [num_turbines, 2]
+        self.pos_history = []
+        
+        self.pos = np.ones([num_turbines, 2]) * self.fence + np.random.uniform(size=[num_turbines, 2]) * (self.length - 2 * self.fence)
+        self.pos = self.calc_position(np.zeros(self.shape), np.zeros(self.shape), np.zeros(self.shape))
     
     def calc_violation(self):
-        # return 0
         cost = 0
         for i in range(len(self.pos)):
             for j in range(len(self.pos)):
@@ -34,9 +35,38 @@ class Particle:
     def calc_position(self, vel_1, vel_2, global_best):
         new_pos = self.pos + np.multiply(vel_1, (global_best - self.pos)) + np.multiply(vel_2, (self.best_pos - self.pos))
         for i in range(len(new_pos)):
-            x, y = new_pos[i]
-            if (x < self.fence or y < self.fence or x > self.length - self.fence or y > self.length - self.fence):
-                new_pos[i] = [self.fence + np.random.uniform()*(self.length - 2 * self.fence), self.fence + np.random.uniform()*(self.length - 2 * self.fence)]
+            for j in range(len(new_pos)):
+                if (i == j):
+                    continue
+
+                x_1, y_1 = new_pos[i]
+                x_2, y_2 = new_pos[j]
+                dist = np.sqrt((x_1 - x_2)** 2 + (y_1 - y_2)** 2)
+                if (dist < self.min_sep):
+                    radius = (self.min_sep - dist) / 2
+                    angle = np.arctan((y_2 - y_1) / (x_2 - x_1 + 1e-3))
+                    # turn = np.random.uniform(low = -1.57/2, high = 1.57/2)
+                    turn = 0
+                    c=(x_2 * y_1 - x_1 * y_2) / (x_2 - x_1 + 1e-3)
+                    
+                    s_x_1 = x_1
+                    s_y_1 = y_1 + c
+                    s_x_2 = x_2
+                    s_y_2 = y_2 + c
+
+                    r_x_1 = s_x_1 * np.cos(angle) + s_y_1 * np.sin(angle) + radius*np.cos(turn)
+                    r_y_1 = s_y_1 * np.cos(angle) - s_x_1 * np.sin(angle) + radius*np.sin(turn)
+                    r_x_2 = s_x_2 * np.cos(angle) + s_y_2 * np.sin(angle) - radius*np.cos(turn)
+                    r_y_2 = s_y_2 * np.cos(angle) - s_x_2 * np.sin(angle) - radius * np.sin(turn)
+                    
+                    new_pos[i] = [r_x_1 * np.cos(angle) - r_y_1 * np.sin(angle), r_x_1 * np.sin(angle) + r_y_1 * np.cos(angle) - c]
+                    new_pos[j] = [r_x_2 * np.cos(angle) - r_y_2 * np.sin(angle), r_x_2 * np.sin(angle) + r_y_2 * np.cos(angle) - c]
+
+            new_pos[i][0] = min(new_pos[i][0], self.length - self.fence)
+            new_pos[i][1] = min(new_pos[i][1], self.length - self.fence)
+            new_pos[i][0] = max(self.fence, new_pos[i][0])
+            new_pos[i][1] = max(self.fence, new_pos[i][1])
+                
         return new_pos
 
     def log_data(self, index):
@@ -84,8 +114,6 @@ class Swarm:
             particle.pos_history.append(particle.pos)
             particle.pos = new_pos
 
-            # particle.log_data(i)
-
     def log_file(self, filename: str):
         f = open(filename, "w")
         f.write("x,y\n")
@@ -94,15 +122,13 @@ class Swarm:
         f.close()
 
     def calc_aep(self, pos):
-        # if not checkConstraints(pos, self.turb_diam):
-        #     return 0
-        
-        aep = getAEP(self.turb_diam / 2, pos, self.power_curve, self.wind_bins, self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t)
-
-        return aep
+        return getAEP(self.turb_diam / 2, pos, self.power_curve, self.wind_bins, self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t)
 
     def calc_fitness(self, aep, vc):
-        return aep - vc
+        if (vc != 0):
+            return aep - vc
+        else:
+            return aep**2
 
     def run(self):
         best_plotter = Plotter(1)
@@ -132,10 +158,9 @@ class Swarm:
             best_plotter.plot(self.best_pos)
             for particle in self.particles:
                 particle_plotter.plot(particle.pos)
-            # terminate
         
         self.log_data()
-        self.log_file('results/' + str(round(self.best_aep,4)) + "_" + str(1 if self.best_fitness > 0 else round(self.best_fitness, 4)) + '.csv')
+        self.log_file('results/' + str(round(self.best_aep,4)) + "_" + str(round(self.best_fitness, 4)) + "_" + str(self.num_particles) + "_" + str(self.max_iterations) + '.csv')
 
     def log_data(self):
         print("Iteration: ", self.iter_count, "Best Fitness: ", self.best_fitness, "Best AEP: ", self.best_aep)
