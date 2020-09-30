@@ -1,5 +1,6 @@
 import numpy as np
 from eval import getAEP, loadPowerCurve, binWindResourceData, preProcessing, checkConstraints
+from utils import Plotter
 
 class Particle:
     def __init__(self, num_turbines: int = 50):
@@ -17,19 +18,35 @@ class Particle:
         self.shape= [num_turbines, 2]
     
     def calc_violation(self):
-        return 0
+        # return 0
+        cost = 0
+        for i in range(len(self.pos)):
+            for j in range(len(self.pos)):
+                if (i == j):
+                    continue
+                x_1, y_1 = self.pos[i]
+                x_2, y_2 = self.pos[j]
+                dist = np.sqrt((x_1 - x_2)** 2 + (y_1 - y_2)** 2)
+                if (dist < self.min_sep):
+                    cost = cost + (self.min_sep - dist)
+        return cost
 
     def calc_position(self, vel_1, vel_2, global_best):
-        return (self.pos + np.multiply(vel_1, (global_best - self.pos)) + np.multiply(vel_2, (self.best_pos - self.pos)))
+        new_pos = self.pos + np.multiply(vel_1, (global_best - self.pos)) + np.multiply(vel_2, (self.best_pos - self.pos))
+        for i in range(len(new_pos)):
+            x, y = new_pos[i]
+            if (x < self.fence or y < self.fence or x > self.length - self.fence or y > self.length - self.fence):
+                new_pos[i] = [self.fence + np.random.uniform()*(self.length - 2 * self.fence), self.fence + np.random.uniform()*(self.length - 2 * self.fence)]
+        return new_pos
 
     def log_data(self, index):
         print("Index: ", index, "Best AEP: ", self.best_aep, "Curr Fitness: ", self.fitness)
 
 class Swarm:
     def __init__(self, num_particles: int = 500, max_iterations: int = 400, epsilon: float = 0.1):
-        self.powerCurve = loadPowerCurve('../Dataset/Shell_Hackathon Dataset/power_curve.csv')
-        self.windBins = binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')
-        self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t = preProcessing(self.powerCurve)
+        self.power_curve = loadPowerCurve('../Dataset/Shell_Hackathon Dataset/power_curve.csv')
+        self.wind_bins = binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')
+        self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t = preProcessing(self.power_curve)
         self.turb_diam = 50
 
         self.num_particles = num_particles
@@ -38,7 +55,7 @@ class Swarm:
         
         self.best_pos = None
         self.best_aep = 0
-        self.best_fitness = -1
+        self.best_fitness = None
         
         self.iter_count = 0
         self.particles = [Particle() for i in range(num_particles)]
@@ -52,7 +69,7 @@ class Swarm:
             
             viol_cost = particle.calc_violation()
             new_aep = self.calc_aep(particle.pos)
-            new_fitness = new_aep - viol_cost
+            new_fitness = self.calc_fitness(new_aep, viol_cost)
 
             if (new_fitness > particle.fitness):
                 particle.best_pos = new_pos
@@ -80,32 +97,45 @@ class Swarm:
         # if not checkConstraints(pos, self.turb_diam):
         #     return 0
         
-        aep = getAEP(self.turb_diam / 2, pos, self.powerCurve, self.windBins, self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t)
+        aep = getAEP(self.turb_diam / 2, pos, self.power_curve, self.wind_bins, self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t)
 
         return aep
 
+    def calc_fitness(self, aep, vc):
+        return aep - vc
+
     def run(self):
+        best_plotter = Plotter(1)
+        particle_plotter = Plotter(2)
+
         for particle in self.particles:
             viol_cost = particle.calc_violation()
             aep = self.calc_aep(particle.pos)
-            particle.fitness = aep - viol_cost
-            if (particle.fitness > self.best_fitness):
+            particle.fitness = self.calc_fitness(aep, viol_cost)
+            if (self.best_fitness is None or particle.fitness > self.best_fitness):
                 self.best_fitness = particle.fitness
                 self.best_pos = particle.pos
                 self.best_aep = aep
             particle.best_pos = particle.pos
 
         self.log_data()
+        for particle in self.particles:
+            particle_plotter.plot(particle.pos)
 
         self.iter_count = 1
+
         while (self.iter_count < self.max_iterations):
             self.iterate()
             self.log_data()
             self.iter_count = self.iter_count + 1
+
+            best_plotter.plot(self.best_pos)
+            for particle in self.particles:
+                particle_plotter.plot(particle.pos)
             # terminate
         
         self.log_data()
-        self.log_file('results/result_' + str(round(self.best_aep,4)) + '.csv')
+        self.log_file('results/' + str(round(self.best_aep,4)) + "_" + str(1 if self.best_fitness > 0 else round(self.best_fitness, 4)) + '.csv')
 
     def log_data(self):
         print("Iteration: ", self.iter_count, "Best Fitness: ", self.best_fitness, "Best AEP: ", self.best_aep)
