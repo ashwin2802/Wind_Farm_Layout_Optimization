@@ -3,7 +3,7 @@ import csv
 import numpy as np
 
 class Plotter:
-    def __init__(self, index: int = 0, delay: float = 0.01):
+    def __init__(self, index: int = 0, delay: float = 0.0001):
         plt.ion()
         plt.show()
         self.fig = plt.figure(index)
