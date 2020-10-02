@@ -13,16 +13,25 @@ def GeneratePointsInCircle(n:int, center_x:float, center_y:float, radius:float):
 	return np.squeeze(np.dstack((x_arr,y_arr)))
 
 
-def PlacePointsInCorner(x_min, x_max, y_min, y_max):
+def PlacePointsInCorner(x_min, x_max, y_min, y_max, count):
+	assert count == 4 or count == 32 or count == 33, "Allowed values of count are 4,24,25"
+
 	# place 4 points in 4 corners
 	res = [[x_min, y_min], [x_max, y_min], [x_min, y_max], [x_max, y_max]]
 
-	# return 4, res
+	# place more points on boundary
+	if(count > 4):
+		points = 7
+		theta_arr = np.linspace(0, 1, points+2)[1:-1]
+		for theta in theta_arr:
+			res.append([(theta*x_min + (1-theta)*x_max), y_min])
+			res.append([(theta*x_min + (1-theta)*x_max), y_max])
 
-	# place 4 more points in between side boundaries
-	res.append([(x_min+x_max)/2, y_min])
-	res.append([(x_min+x_max)/2, y_max])
-	res.append([x_min, (y_min+y_max)/2])
-	res.append([x_max, (y_min+y_max)/2])
+			res.append([x_min, (theta*y_min + (1-theta)*y_max)])
+			res.append([x_max, (theta*y_min + (1-theta)*y_max)])
 
-	return 8, res
+	# place point in center
+	if(count > 32):
+		res.append([(x_min+x_max)/2, (y_min+y_max)/2])
+		
+	return res
