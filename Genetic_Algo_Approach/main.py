@@ -10,7 +10,7 @@ def firstIteration(pop_size, power_curve, wind_inst_freq):
 	max_DNA = None
 
 	for i in range(pop_size):
-		curr_DNA = WindFarm_DNA(num_of_turbines=50, x_min=50, x_max=3950, y_min=50, y_max=3950, D_min=400)
+		curr_DNA = WindFarm_DNA(generate_genes = True)
 		curr_fitness = curr_DNA.calcFitness(power_curve, wind_inst_freq, 515)
 		
 		DNA_arr     = np.append(DNA_arr, curr_DNA)
@@ -47,7 +47,7 @@ def GetBestAndPrepareNext(parents_DNA, max_fitness):
 if __name__ == "__main__":
 	power_curve    =  loadPowerCurve('../Dataset/Shell_Hackathon Dataset/power_curve.csv')
 	wind_inst_freq =  binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')   
-	max_iterations = 250
+	max_iterations = 100
 	pop_size 	   = 1024
 	
 
@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
 
 	# Rest of the iterations
-	with concurrent.futures.ProcessPoolExecutor() as executor:
+	workers = 2
+	with concurrent.futures.ProcessPoolExecutor(max_workers = workers) as executor:
 		for iteration in range(1, max_iterations):
 			# Selection
 			if(pop_size <= 1 or np.sum(fitness_arr) == 0):	break
