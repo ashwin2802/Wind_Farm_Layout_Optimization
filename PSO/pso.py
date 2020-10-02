@@ -86,8 +86,6 @@ class Swarm:
     def __init__(self, num_particles: int = 500, max_iterations: int = 400, epsilon: float = 0.1):
         self.power_curve = loadPowerCurve('../Dataset/Shell_Hackathon Dataset/power_curve.csv')
         self.wind_bins = binWindResourceData(r'../Dataset/Shell_Hackathon Dataset/Wind Data/wind_data_2007.csv')
-        self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t = preProcessing(self.power_curve)
-        self.turb_diam = 100
 
         self.num_particles = num_particles
         self.max_iterations = max_iterations
@@ -132,7 +130,7 @@ class Swarm:
         f.close()
 
     def calc_aep(self, pos):
-        return getAEP(self.turb_diam / 2, pos, self.power_curve, self.wind_bins, self.n_wind_instances, self.cos_dir, self.sin_dir, self.wind_sped_stacked, self.C_t)
+        return modAEP(pos, self.power_curve, self.wind_bins)
 
     def calc_fitness(self, aep, vc):
         if (vc != 0):
