@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-import pso
+import bound_pso as pso
 
 if __name__ == "__main__":
     num_particles, max_iterations = list(map(int, input().split(',')))

@@ -493,8 +493,8 @@ def modAEP(turb_coords, power_curve, wind_inst_freq):
     # out the function call to checkConstraints below if you desire. Note that 
     # this is just a check and the function does not quantifies the amount by 
     # which the constraints are violated if any. 
-    if not checkConstraints(turb_coords, turb_diam):
-        return 0
+    # if not checkConstraints(turb_coords, turb_diam):
+    #     return 0
     
     # print('Calculating AEP......')
     AEP = getAEP(turb_rad, turb_coords, power_curve, wind_inst_freq, 

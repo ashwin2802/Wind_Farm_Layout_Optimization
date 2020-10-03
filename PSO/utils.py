@@ -1,6 +1,6 @@
-import matplotlib.pyplot as plt
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Plotter:
     def __init__(self, index: int = 0, delay: float = 0.0001):
@@ -51,7 +51,8 @@ class Plotter:
             plt.ioff()
             plt.show()
 
-        plt.pause(self.delay)
+        plt.gcf().canvas.draw_idle()
+        plt.gcf().canvas.start_event_loop(self.delay)
 
 if __name__ == "__main__":
     aep = input("Enter csv filename to plot from results folder: ")
