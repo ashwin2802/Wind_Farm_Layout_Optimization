@@ -8,7 +8,8 @@ class WindFarm_DNA:
 	def __init__(self, generate_genes: bool = True):
 		self.genes = []
 		self.fitness = 0.0
-		self.initial_placed_count = 33
+		self.initial_placed_count = 36
+
 		self.num_of_turbines = 50
 		self.x_min = 50
 		self.x_max = 3950
@@ -16,25 +17,23 @@ class WindFarm_DNA:
 		self.y_max = 3950
 		self.D_min = 400
 
-		if(generate_genes == False):
+		self.to_place = self.num_of_turbines - self.initial_placed_count
+		self.genes = PlacePointsInCorner(self.x_min, self.x_max, self.y_min, self.y_max, self.initial_placed_count)
+
+		self.x_min = 400
+		self.x_max = 3600
+		self.y_min = 400
+		self.y_max = 3600
+
+		self.gene_binary = np.zeros(64) # to be interpreted as boolean array of size 8*8
+		self.cell_size = 400
+
+		if(generate_genes == False or self.to_place == 0):
 			return
 
-		max_candidates = self.num_of_turbines*10
-		candidates_x = self.x_min + np.random.rand(max_candidates)*(self.x_max - self.x_min)
-		candidates_y = self.y_min + np.random.rand(max_candidates)*(self.y_max - self.y_min)
-
-		self.genes = PlacePointsInCorner(self.x_min, self.x_max, self.y_min, self.y_max, self.initial_placed_count)
-		candidate_index = 0
-		for i in range(self.initial_placed_count, self.num_of_turbines):
-			found_flag = False
-			while(not found_flag and candidate_index < max_candidates):
-				dists = [((gene[0] - candidates_x[candidate_index])**2 + (gene[1] - candidates_y[candidate_index])**2) for gene in self.genes]
-				if(min(dists) >= self.D_min**2):
-					found_flag = True
-					self.genes.append([candidates_x[candidate_index], candidates_y[candidate_index]])
-				
-				candidate_index += 1
-			assert candidate_index < max_candidates, "All candidates tested !!!"
+		# generate random integers to be place turbines
+		indices = np.random.choice(self.gene_binary.shape[0], self.to_place, replace=False)
+		self.gene_binary[indices] = 1
 
 
 	# Printing the DNA in string format
@@ -52,60 +51,78 @@ class WindFarm_DNA:
 	def writeToFile(self, filename: str):
 		f = open(filename, "w")
 		f.write("x,y\n")
-		for i in range(len(self.genes)):
-			f.write(str(self.genes[i][0]) + "," + str(self.genes[i][1]) + "\n")
+
+		temp_genes = self.getGenesFromBinary()
+		genes = np.concatenate((self.genes, temp_genes))
+		for i in range(self.num_of_turbines):
+			f.write(str(genes[i][0]) + "," + str(genes[i][1]) + "\n")
 		f.close()
+
+
+	def getGenesFromBinary(self):
+		filled_indices = np.where(self.gene_binary == 1)[0]
+		x, y = filled_indices//8, filled_indices%8
+		x_cord, y_cord = self.cell_size*x + (self.cell_size//2), self.cell_size*y + (self.cell_size//2)
+		
+		res = [[self.x_min + x_cord[i], self.y_min + y_cord[i]] for i in range(self.to_place)]
+		return res
 
 	
 	# Fitness function (returns floating point % of "correct" characters)
 	def calcFitness(self, powerCurve, wind_inst_freq, c):
-		self.fitness = modAEP(np.array(self.genes), powerCurve, wind_inst_freq)
+		temp_genes = self.getGenesFromBinary()
+		self.fitness = modAEP(np.concatenate((self.genes, temp_genes)), powerCurve, wind_inst_freq)
 	 
 		# if(self.fitness < c-0.1):
 		#	return self.fitness
 	 
-		return 5**(10*(self.fitness - c))
+		return 5*(10*(self.fitness - c))
 
 	
 	# Crossover
-	def parthegenesis(self, p:float = 0.8, radius: float = 5):
+	def crossover(self, partner):
 		# A new child
 		child = WindFarm_DNA(generate_genes = False)
 
-		# Allow single-parent to produce with probability p a 
-		# child located in a random position within a circle of 
-		# radius r centered at parent
+		indices1 = np.where(self.gene_binary == 1)[0]
+		indices2 = np.where(partner.gene_binary == 1)[0]
 
-		child.genes = PlacePointsInCorner(self.x_min, self.x_max, self.y_min, self.y_max, self.initial_placed_count)
-		for i in range(self.initial_placed_count, self.num_of_turbines):
-			parent_gene = self.genes[i]
+		indices = np.unique(np.concatenate((indices1, indices2)))
+		child_filled_indices = np.random.choice(indices, self.to_place, replace=False)
 
-			if(np.random.rand() < (1-p)):
-				child.genes.append(parent_gene)
-				continue
-
-			# generate 10 random genes in the circle around current parent
-			num_points = 20
-			candidate_genes = GeneratePointsInCircle(n = num_points, center_x = parent_gene[0], center_y = parent_gene[1], radius = radius)
-			
-			# choose the one that satisfies the constraints with previous ones, if none does return None
-			found_flag = False
-			for i in range(num_points):
-				dists = [((gene[0] - candidate_genes[i][0])**2 + (gene[1] - candidate_genes[i][1])**2) for gene in child.genes]
-				if(candidate_genes[i][0]>=self.x_min and candidate_genes[i][0]<=self.x_max and candidate_genes[i][1]>=self.y_min and candidate_genes[i][1]<=self.y_max and min(dists) >= self.D_min**2):
-					found_flag = True
-					child.genes.append(candidate_genes[i])
-					break
-
-			if found_flag == False:
-				return None
-
+		child.gene_binary[child_filled_indices] = 1
+		assert(len(child_filled_indices) == len(set(child_filled_indices)))
 		return child
 
 	
 	# Based on a mutation probability, shift turbine's x and y=coordinate with normal distribution 
-	def mutate(self, mutationRate:float = 0.1, mu: float = 0, sigma: float = 1):
-		for i in range(self.initial_placed_count, len(self.genes)):
-			if (np.random.rand() < mutationRate):
-				self.genes[i][0] += np.random.normal(mu, sigma)
-				self.genes[i][1] += np.random.normal(mu, sigma)
+	def mutate(self, mutationRate:float = 0.2):
+		filled_indices = np.where(self.gene_binary == 1)[0]
+		for i in range(filled_indices.shape[0]):
+			if(np.random.rand() < mutationRate):
+				opts = findEmptyNeighbours(i, filled_indices)
+				new_index = np.random.choice(opts)
+				filled_indices[i] = new_index
+
+		self.gene_binary = np.zeros(self.gene_binary.shape[0])
+		assert(len(filled_indices) == len(set(filled_indices)))
+		self.gene_binary[filled_indices] = 1
+
+
+
+def findEmptyNeighbours(i, arr, rows=8, cols=8):
+	index = arr[i]
+	x, y = index//rows, index%cols
+
+	res_x_y = []
+
+	if x!=0 and (((x-1)*rows + y) not in arr):			res_x_y.append((x-1, y))
+	if y!=0 and ((x*rows + (y-1)) not in arr):			res_x_y.append((x, y-1))
+	if (x+1)!=rows and (((x+1)*rows + y) not in arr):	res_x_y.append((x+1, y))
+	if (y+1)!=cols and ((x*rows + (y+1)) not in arr):	res_x_y.append((x, y+1))
+
+	if(len(res_x_y) == 0):
+		return [index]
+
+	res = [a*rows + b for (a,b) in res_x_y]
+	return res
