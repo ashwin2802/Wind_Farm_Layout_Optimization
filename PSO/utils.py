@@ -1,6 +1,11 @@
+import tkinter
+import matplotlib
+matplotlib.use('TkAgg')
+
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
+
 
 class Plotter:
     def __init__(self, index: int = 0, delay: float = 0.0001):
