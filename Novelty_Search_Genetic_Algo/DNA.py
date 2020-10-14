@@ -8,7 +8,7 @@ class WindFarm_DNA:
 	def __init__(self, generate_genes: bool = True):
 		self.genes = []
 		self.fitness = 0.0
-		self.initial_placed_count = 37
+		self.initial_placed_count = 36
 		self.num_of_turbines = 50
 		self.x_min = 50
 		self.x_max = 3950
@@ -18,10 +18,11 @@ class WindFarm_DNA:
 
 		self.genes = PlacePointsInCorner(self.x_min, self.x_max, self.y_min, self.y_max, self.initial_placed_count)
 
-		self.x_min = 400
-		self.x_max = 3600
-		self.y_min = 400
-		self.y_max = 3600
+		if self.initial_placed_count >= 16:
+			self.x_min = 400
+			self.x_max = 3600
+			self.y_min = 400
+			self.y_max = 3600
 
 		if(generate_genes == False):
 			return
@@ -64,13 +65,13 @@ class WindFarm_DNA:
 
 	
 	# Fitness function (returns floating point % of "correct" characters)
-	def calcFitness(self, powerCurve, wind_inst_freq, c):
+	def calcFitness(self, powerCurve, wind_inst_freq, novelty_obj = None, rebuild=True, rho=0.0, offset=0):
 		self.fitness = modAEP(np.array(self.genes), powerCurve, wind_inst_freq)
-	 
-		# if(self.fitness < c-0.1):
-		#	return self.fitness
-	 
-		return self.fitness
+		if(novelty_obj is None):	return self.fitness
+		if(self.fitness == 0)  :	return 0	
+
+		curr_novelty = novelty_obj.calcNovelty(self.genes, rebuild=rebuild, offset=offset)
+		return rho*curr_novelty + (1-rho)*self.fitness
 
 	
 	# Crossover
