@@ -8,7 +8,7 @@ class WindFarm_DNA:
 	def __init__(self, generate_genes: bool = True):
 		self.genes = []
 		self.fitness = 0.0
-		self.initial_placed_count = 36
+		self.initial_placed_count = 28
 		self.num_of_turbines = 50
 		self.x_min = 50
 		self.x_max = 3950
@@ -19,9 +19,9 @@ class WindFarm_DNA:
 		self.genes = PlacePointsInCorner(self.x_min, self.x_max, self.y_min, self.y_max, self.initial_placed_count)
 
 		if self.initial_placed_count >= 16:
-			self.x_min = 400
+			# self.x_min = 400
 			self.x_max = 3600
-			self.y_min = 400
+			# self.y_min = 400
 			self.y_max = 3600
 
 		if(generate_genes == False):
@@ -82,14 +82,13 @@ class WindFarm_DNA:
 		# Allow single-parent to produce with probability p a 
 		# child located in a random position within a circle of 
 		# radius r centered at parent
+		if(np.random.rand() < (1-p)):
+			child.genes = self.genes
+
 		for i in range(self.initial_placed_count, self.num_of_turbines):
 			parent_gene = self.genes[i]
 
-			if(np.random.rand() < (1-p)):
-				child.genes.append(parent_gene)
-				continue
-
-			# generate 10 random genes in the circle around current parent
+			# generate 20 random genes in the circle around current parent
 			num_points = 20
 			candidate_genes = GeneratePointsInCircle(n = num_points, center_x = parent_gene[0], center_y = parent_gene[1], radius = radius)
 			
@@ -109,7 +108,7 @@ class WindFarm_DNA:
 
 	
 	# Based on a mutation probability, shift turbine's x and y=coordinate with normal distribution 
-	def mutate(self, mutationRate:float = 0.2, mu: float = 0, sigma: float = 20):
+	def mutate(self, mutationRate:float = 0.2, mu: float = 0, sigma: float = 100):
 		for i in range(self.initial_placed_count, len(self.genes)):
 			if (np.random.rand() < mutationRate):
 				self.genes[i][0] += np.random.normal(mu, sigma)

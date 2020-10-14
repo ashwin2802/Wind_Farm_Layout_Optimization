@@ -14,9 +14,10 @@ def GeneratePointsInCircle(n:int, center_x:float, center_y:float, radius:float):
 
 
 def PlacePointsInCorner(x_min, x_max, y_min, y_max, count):
-	assert count == 4 or count == 36 or count == 37, "Allowed values of count are 4,36,37"
+	# assert count == 4 or count == 36 or count == 37, "Allowed values of count are 4,36,37"
 
 	# place 4 points in 4 corners
+	# res = [[x_max, y_min], [x_min, y_max], [x_max, y_max]]
 	res = [[x_min, y_min], [x_max, y_min], [x_min, y_max], [x_max, y_max]]
 
 	# place more points on boundary
@@ -24,10 +25,14 @@ def PlacePointsInCorner(x_min, x_max, y_min, y_max, count):
 		points = 8
 		theta_arr = np.linspace(0, 1, points+2)[1:-1]
 		for theta in theta_arr:
-			res.append([(theta*x_min + (1-theta)*x_max), y_min])
-			res.append([(theta*x_min + (1-theta)*x_max), y_max])
-
+			# res.append([(theta*x_min + (1-theta)*x_max), y_min])
 			res.append([x_min, (theta*y_min + (1-theta)*y_max)])
+			
+
+		points = 8
+		theta_arr = np.linspace(0, 1, points+2)[1:-1]
+		for theta in theta_arr:
+			res.append([(theta*x_min + (1-theta)*x_max), y_max])
 			res.append([x_max, (theta*y_min + (1-theta)*y_max)])
 
 	# place point in center
