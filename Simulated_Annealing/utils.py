@@ -54,7 +54,14 @@ class Plotter:
         plt.gcf().canvas.draw_idle()
         plt.gcf().canvas.start_event_loop(self.delay)
 
+def log_file(pos, filename: str):
+    f = open(filename, "w")
+    f.write("x,y\n")
+    for i in range(len(pos)):
+        f.write(str(pos[i][0]) + "," + str(pos[i][1]) + "\n")
+    f.close()
+
 if __name__ == "__main__":
     aep = input("Enter csv filename to plot from results folder: ")
     plotter = Plotter()
-    plotter.plot_from_file('results/' + aep + '.csv')
+    plotter.plot_from_file('results/'+ aep + '.csv')

@@ -15,8 +15,8 @@ class Particle:
         self.num_turbines = num_turbines
 
         self.cpts = 4
-        self.epts = np.random.choice(range(0,12), size=4)
-        self.fpts = num_turbines - self.cpts - sum(self.epts)
+        self.epts = 8
+        self.fpts = num_turbines - self.cpts - self.epts * 4
         self.shape = [num_turbines, 2]
 
         self.max_viol_time = max_viol_time
@@ -32,26 +32,24 @@ class Particle:
         self.viol_time = 0
         self.life = 0
 
-        idx = np.random.choice(4, size=min(self.cpts, 4), replace=False)
+        # idx = np.random.choice(4, size=min(self.cpts, 4), replace=False)
         self.pos = []
-        for i in idx:
+        for i in range(4):
             self.pos.append(self.corners[i])
         
-        ept = np.ones(self.epts[0]) * self.fence + np.random.uniform(size=self.epts[0]) * (self.length - 2 * self.fence)
+        ept = [i * self.min_sep for i in range(1,9)]
+        
         for e in ept:
-            self.pos.append([e, self.fence])
-        ept = np.ones(self.epts[1]) * self.fence + np.random.uniform(size=self.epts[1]) * (self.length - 2 * self.fence)
+            self.pos.append([e + self.fence, self.fence])
         for e in ept:
-            self.pos.append([self.fence, e])
-        ept = np.ones(self.epts[2]) * self.fence + np.random.uniform(size=self.epts[2]) * (self.length - 2 * self.fence)
+            self.pos.append([self.fence, e + self.fence])
         for e in ept:
-            self.pos.append([e, self.length - self.fence])
-        ept = np.ones(self.epts[3]) * self.fence + np.random.uniform(size=self.epts[3]) * (self.length - 2 * self.fence)
+            self.pos.append([e + self.fence, self.length - self.fence])
         for e in ept:
-            self.pos.append([self.length - self.fence, e])
+            self.pos.append([self.length - self.fence, e + self.fence])
 
         for i in range(self.fpts):
-            self.pos.append([self.fence+np.random.uniform()*(self.length - 2*(self.fence)),self.fence+np.random.uniform()*(self.length - 2*(self.fence))])
+            self.pos.append([self.fence + np.random.uniform() * (self.length - 2 * (self.fence)), self.fence + np.random.uniform() * (self.length - 2 * (self.fence))])
 
         self.pos = np.array(self.pos)
         self.constrain(self.pos)
@@ -71,23 +69,23 @@ class Particle:
         # self.epts = np.random.choice(range(4,9))
         # self.fpts = self.num_turbines - self.cpts - self.epts * 4
         
-        idx = np.random.choice(4, size=min(self.cpts, 4), replace=False)
-        self.pos = []
-        for i in idx:
-            self.pos.append(self.corners[i])
+        # idx = np.random.choice(4, size=min(self.cpts, 4), replace=False)
+        # self.pos = []
+        # for i in idx:
+        #     self.pos.append(self.corners[i])
         
-        ept = np.ones(self.epts[0]) * self.fence + np.random.uniform(size=self.epts[0]) * (self.length - 2 * self.fence)
-        for e in ept:
-            self.pos.append([e, self.fence])
-        ept = np.ones(self.epts[1]) * self.fence + np.random.uniform(size=self.epts[1]) * (self.length - 2 * self.fence)
-        for e in ept:
-            self.pos.append([self.fence, e])
-        ept = np.ones(self.epts[2]) * self.fence + np.random.uniform(size=self.epts[2]) * (self.length - 2 * self.fence)
-        for e in ept:
-            self.pos.append([e, self.length - self.fence])
-        ept = np.ones(self.epts[3]) * self.fence + np.random.uniform(size=self.epts[3]) * (self.length - 2 * self.fence)
-        for e in ept:
-            self.pos.append([self.length - self.fence, e])
+        # ept = np.ones(self.epts[0]) * self.fence + np.random.uniform(size=self.epts[0]) * (self.length - 2 * self.fence)
+        # for e in ept:
+        #     self.pos.append([e, self.fence])
+        # ept = np.ones(self.epts[1]) * self.fence + np.random.uniform(size=self.epts[1]) * (self.length - 2 * self.fence)
+        # for e in ept:
+        #     self.pos.append([self.fence, e])
+        # ept = np.ones(self.epts[2]) * self.fence + np.random.uniform(size=self.epts[2]) * (self.length - 2 * self.fence)
+        # for e in ept:
+        #     self.pos.append([e, self.length - self.fence])
+        # ept = np.ones(self.epts[3]) * self.fence + np.random.uniform(size=self.epts[3]) * (self.length - 2 * self.fence)
+        # for e in ept:
+        #     self.pos.append([self.length - self.fence, e])
     
         # for i in range(self.cpts + self.epts*4):
         #     self.pos.append(old_best[i])
@@ -110,22 +108,22 @@ class Particle:
         vel_1 = []
         vel_2 = []
 
-        for c in range(self.cpts):
+        for c in range(self.cpts + 4 * self.epts):
             vel_1.append([0, 0])
             vel_2.append([0, 0])
         
-        for e in range(self.epts[0]):
-            vel_1.append([np.random.uniform(low=0, high=1), 0])
-            vel_2.append([np.random.uniform(low=-1, high=1), 0])
-        for e in range(self.epts[1]):
-            vel_1.append([0, np.random.uniform(low=0, high=1)])
-            vel_2.append([0, np.random.uniform(low=-1, high=1)])
-        for e in range(self.epts[2]):
-            vel_1.append([np.random.uniform(low=0, high=1), 0])
-            vel_2.append([np.random.uniform(low=-1, high=1), 0])
-        for e in range(self.epts[3]):
-            vel_1.append([0, np.random.uniform(low=0, high=1)])
-            vel_2.append([0, np.random.uniform(low=-1, high=1)])
+        # for e in range(self.epts[0]):
+        #     vel_1.append([np.random.uniform(low=0, high=1), 0])
+        #     vel_2.append([np.random.uniform(low=-1, high=1), 0])
+        # for e in range(self.epts[1]):
+        #     vel_1.append([0, np.random.uniform(low=0, high=1)])
+        #     vel_2.append([0, np.random.uniform(low=-1, high=1)])
+        # for e in range(self.epts[2]):
+        #     vel_1.append([np.random.uniform(low=0, high=1), 0])
+        #     vel_2.append([np.random.uniform(low=-1, high=1), 0])
+        # for e in range(self.epts[3]):
+        #     vel_1.append([0, np.random.uniform(low=0, high=1)])
+        #     vel_2.append([0, np.random.uniform(low=-1, high=1)])
 
         for f in range(self.fpts):
             vel_1.append([np.random.uniform(low=0, high=1),np.random.uniform(low=0, high=1)])
@@ -137,7 +135,7 @@ class Particle:
         global_move = np.multiply(vel_1, (g_best - self.pos))
         local_move = np.multiply(vel_2, (self.best_pos - self.pos))
 
-        return self.constrain(self.pos + local_move)
+        return self.constrain(self.pos + global_move + local_move)
         
         # vel_1 = np.random.uniform(low=0, high=1, size=self.shape)
         # vel_2 = np.random.uniform(low=-1, high=1, size=self.shape)
@@ -148,7 +146,7 @@ class Particle:
         # return self.constrain(self.pos + global_move + local_move)
 
     def constrain(self, pos):
-        for i in range(len(pos)):
+        for i in range(self.cpts + 4 * self.epts, len(pos)):
             for j in range(len(pos)):
                 if (i == j):
                     continue
@@ -168,19 +166,19 @@ class Particle:
                     s_x_2 = x_2
                     s_y_2 = y_2 + c
 
-                    r_x_1 = s_x_1 * np.cos(angle) + s_y_1 * np.sin(angle) + radius*np.cos(turn)
-                    r_y_1 = s_y_1 * np.cos(angle) - s_x_1 * np.sin(angle) + radius*np.sin(turn)
-                    r_x_2 = s_x_2 * np.cos(angle) + s_y_2 * np.sin(angle) - radius*np.cos(turn)
-                    r_y_2 = s_y_2 * np.cos(angle) - s_x_2 * np.sin(angle) - radius * np.sin(turn)
+                    r_x_1 = s_x_1 * np.cos(angle) + s_y_1 * np.sin(angle) + 2*radius*np.cos(turn)
+                    r_y_1 = s_y_1 * np.cos(angle) - s_x_1 * np.sin(angle) + 2*radius*np.sin(turn)
+                    r_x_2 = s_x_2 * np.cos(angle) + s_y_2 * np.sin(angle) - 0*radius*np.cos(turn)
+                    r_y_2 = s_y_2 * np.cos(angle) - s_x_2 * np.sin(angle) - 0*radius * np.sin(turn)
                     
                     pos[i] = [r_x_1 * np.cos(angle) - r_y_1 * np.sin(angle), r_x_1 * np.sin(angle) + r_y_1 * np.cos(angle) - c]
                     pos[j] = [r_x_2 * np.cos(angle) - r_y_2 * np.sin(angle), r_x_2 * np.sin(angle) + r_y_2 * np.cos(angle) - c]
 
-        for i in range(len(pos)):
-            pos[i][0] = min(pos[i][0], self.length - self.fence)
-            pos[i][1] = min(pos[i][1], self.length - self.fence)
-            pos[i][0] = max(self.fence, pos[i][0])
-            pos[i][1] = max(self.fence, pos[i][1])
+        for i in range(self.cpts + self.epts * 4, len(pos)):
+            pos[i][0] = min(pos[i][0], self.length - self.fence - self.min_sep)
+            pos[i][1] = min(pos[i][1], self.length - self.fence - self.min_sep)
+            pos[i][0] = max(self.fence + self.min_sep, pos[i][0])
+            pos[i][1] = max(self.fence + self.min_sep, pos[i][1])
         
         cost = self.calc_viol(pos)
         
@@ -230,8 +228,8 @@ class Swarm:
         self.g_best_aep = 0
         self.g_best_fitness = -np.inf
 
-        # self.bplot = Plotter(1)
-        # self.pplot = Plotter(2)
+        self.bplot = Plotter(1)
+        self.pplot = Plotter(2)
 
         self.g_count = 0
         self.max_g_count = max_g_time
@@ -303,18 +301,18 @@ class Swarm:
         idx = np.argpartition(bests, -3)
         print("Iteration: ", self.iter_count, "Global Best: ", self.g_best_aep, "Best AEPs: ", bests[idx[-1]], bests[idx[-2]], bests[idx[-3]])
 
-    # def draw_plots(self):
-    #     self.bplot.plot(self.g_best_pos)
-    #     for particle in self.particles:
-    #         self.pplot.plot(particle.best_pos)
+    def draw_plots(self):
+        self.bplot.plot(self.g_best_pos)
+        for particle in self.particles:
+            self.pplot.plot(particle.best_pos)
 
     def run(self):
         self.iter_count = 0
         while (self.iter_count < self.max_iterations):
             self.move_swarm()
             self.log_data()
-            # self.draw_plots()
+            self.draw_plots()
             self.iter_count = self.iter_count + 1
         
         self.log_data()
-        self.log_file('results/bound/'+ str(round(self.g_best_aep,4)) + "_" + str(round(self.g_best_fitness, 4)) + "_" + str(self.num_particles) + "_" + str(self.max_iterations) + '.csv')
+        self.log_file('results/chain/'+ str(round(self.g_best_aep,4)) + "_" + str(round(self.g_best_fitness, 4)) + "_" + str(self.num_particles) + "_" + str(self.max_iterations) + '.csv')
